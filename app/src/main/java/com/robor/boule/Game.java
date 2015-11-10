@@ -1,6 +1,8 @@
 package com.robor.boule;
 
 
+import android.util.Log;
+
 /**
  * Created by RoboR on 11/4/2015.
  *
@@ -21,12 +23,12 @@ public class Game {
     private GAMES selected_game = GAMES.NOGAME;
     private AbstractPlay game = null;
 
-    private double todaysGoal[] = new double[2];
+    private int todaysGoal[] = new int[2];
 
     /* Need to define and configure for the bet_status_table
      Contains the
      1) bet placed
-     2) Probabilty of Losing
+     2) Probability of Losing
      3) Bet to place for Next round
      */
     private int bet_status_table[];
@@ -34,7 +36,7 @@ public class Game {
 
 
 
-    public Game(GAMES game, int total_bets[], double todaysGoal[])
+    public Game(GAMES game, int total_bets[], int todaysGoal[])
     {
         this.todaysGoal[BASE_CAPITAL] = todaysGoal[BASE_CAPITAL];
         this.todaysGoal[TARGET_WINNINGS] = todaysGoal[TARGET_WINNINGS];
@@ -48,17 +50,17 @@ public class Game {
         {
             switch(game)
             {
-                case EURO_ROULETTE:
-                {
+                case EURO_ROULETTE: {
                     this.selected_game = GAMES.EURO_ROULETTE;
                     this.game = new PlayRoulette();
-                    this.bet_status_table = new int[total_bets.length];
-                }
 
+                    //RRR change status table
+                    this.bet_status_table = new int[total_bets.length];
+
+                }
                 default:
                 {}
             }
-
         }
     }
 
