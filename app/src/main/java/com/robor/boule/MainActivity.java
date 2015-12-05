@@ -11,6 +11,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.Random;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -20,7 +22,32 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Game game = new Game(Game.GAMES.EURO_ROULETTE, new int[]{2,3,4}, new int[]{0,0});
+        BetTracker initBet[] = new BetTracker[6];
+
+        initBet[0] = new BetTracker(0x97, 5);
+        initBet[1] = new BetTracker(0x98, 5);
+        initBet[2] = new BetTracker(0x99, 5);
+        initBet[3] = new BetTracker(0x9a, 5);
+        initBet[4] = new BetTracker(0x9b, 5);
+        initBet[5] = new BetTracker(0x9c, 5);
+
+
+
+        Game game = new Game(Game.GAMES.EURO_ROULETTE, initBet, new int[]{2000,100});
+        BetTracker b[];
+        Random rand = new Random();
+        rand.setSeed(Runtime.getRuntime().hashCode());
+
+        for (int i=0; i < 15; i++)
+        {
+            int r = rand.nextInt(37);
+            printBetTracker(game.updateNewResults(r), r);
+        }
+
+        //check all bets are minimal
+        //if (yes), stop the game
+
+        // else (yes), hold the won bets
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -30,6 +57,15 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+    }
+
+    public void printBetTracker(BetTracker bet[], int rand) {
+        String str = rand + ": ";
+
+        for (BetTracker b: bet)
+            str += b.getBetAmount() + ";";
+
+        Log.i("TEST",str);
     }
 
     @Override

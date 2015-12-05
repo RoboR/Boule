@@ -16,27 +16,12 @@ public abstract class AbstractPlay {
     public static final int ONEWINS_ONE          = 1;
     public static final int ONEWINS_TWO          = 2;
     public static final int ONEWINS_FIVE         = 5;
-    public static final int ONEWINS_SIX          = 6;
     public static final int ONEWINS_EIGHT        = 8;
     public static final int ONEWINS_ELEVEN       = 11;
     public static final int ONEWINS_SEVENTEEN    = 17;
     public static final int ONEWINS_THIRTYFIVE   = 35;
 
-    /**
-     *
-     *               -------------------------------------
-                     |  0  |  1  |  2  |  3  |  4  |  5  |
-                     -------------------------------------
-                     |   Bet ID  |         Amount        |
-                     -------------------------------------
-     */
-    public static final int BETID_SIZE = 2;
-    public static final int BETAMNT_SIZE = 4;
-    public static final int BET_ARRAY_SIZE = BETID_SIZE + BETAMNT_SIZE;
-    public static final int BETID_START_IDX = 0;
-    public static final int BETID_END_IDX = BETID_START_IDX + BETID_SIZE - 1;
-    public static final int BETAMNT_START_IDX = BETID_START_IDX + 1;
-    public static final int BETAMNT_END_IDX = BETAMNT_START_IDX + BETAMNT_SIZE - 1;
+
 
 
     /*
@@ -51,14 +36,19 @@ public abstract class AbstractPlay {
 
         return
             An array
-
-
-
      */
-    abstract int[][] checkBetWinnings(int result, int betPlaced[][]);
+    abstract BetTracker[] checkBetWinnings(BetTracker bet[], int resultNum);
 
+    /**
+     * For Example, Roulette the lose rate for placing at 0 (ID:0x00) is 36/37 =  0.9729..
+     *
+     * @return The lose rate of every bet spot with the array index is the bet id.
+     */
+    abstract double[] getLosingRates();
+
+    abstract int getWinRate(int betID);
 
     abstract static class BetSpot {
-        abstract int checkWinnings(int resultNum, int betAmount);
+        abstract long checkWinOnThisSpot(int resultNum, long betAmount);
     }
 }

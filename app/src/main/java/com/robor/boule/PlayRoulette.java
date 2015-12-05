@@ -1,5 +1,5 @@
 package com.robor.boule;
-
+import com.robor.boule.BetTracker;
 
 
 /**
@@ -7,8 +7,7 @@ package com.robor.boule;
  */
 public class PlayRoulette extends AbstractPlay {
 
-
-    private final RouletteSpot betSpots[] = {
+    private static final RouletteSpot betSpots[] = {
             new RouletteSpot(0x00, new int[]{0}, ONEWINS_THIRTYFIVE),
             new RouletteSpot(0x01, new int[]{0, 1}, ONEWINS_SEVENTEEN),
             new RouletteSpot(0x02, new int[]{0,1,2}, ONEWINS_ELEVEN),
@@ -168,10 +167,17 @@ public class PlayRoulette extends AbstractPlay {
             new RouletteSpot(0x9c, new int[]{19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36}, ONEWINS_ONE),
     };
 
+    private static final int bet_results[] = {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+            10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+            20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32, 33, 34, 35, 36
+    };
 
-
-    // Detail Combination and corresponding ID, refer to roulette_bets.png
+    /* Detail Combination and corresponding ID, refer to roulette_bets.png */
     private final int TOTAL_BET_SPOTS = betSpots.length;
+
+    private final int TOTAL_BET_RESULTS = bet_results.length;
 
 
 
@@ -181,56 +187,56 @@ public class PlayRoulette extends AbstractPlay {
 
     Inputs:
         result - the number from 0 to 36
-        betPlaced - array of the id of the bet placed with the amount of bet
-                      first 2 bytes is the unique id next 4 bytes is the amount placed
+        betPlaced - An array of the bet ID together with the amount placed on the spot
 
     return
-        An array
+        Array of betTracker stating the total amount.
+        If lose amount is 0, if win amount is [bet + return of bet]
 
-        -------------------------------------
-        |  0  |  1  |  2  |  3  |  4  |  5  |
-        -------------------------------------
-        |   Bet ID  |         Amount        |
-        -------------------------------------
+        NULL if betPlaced is empty
      */
-    public int[][] checkBetWinnings(int resultNum, int betPlaced[][])
+    public BetTracker[] checkBetWinnings(BetTracker betPlaced[], int resultNum)
     {
-        int betWinnings[][] = new int[betPlaced.length][BET_ARRAY_SIZE];
+        if (null == betPlaced)
+            return null;
 
+        BetTracker betWinnings[] = new BetTracker[betPlaced.length];
 
-        for (int i = 0; i < betPlaced.length; i++)
+        for (int i=0; i < betPlaced.length; i++)
         {
-            int betID = 0;
-            int betAmount = 0;
-            int betIdArr[] = new int[BETID_SIZE];
-            int betAmountArr[] = new int[BETAMNT_SIZE];
+            int curBetID = 0;
+            long betAmount = 0;
 
-
-            if (betPlaced[i].length != BET_ARRAY_SIZE)
-                return betWinnings;
-            else    //Get bet id & bet amount
-            {
-                int k = BETID_START_IDX;
-
-                for (int j=0; j < BETID_SIZE; j++, k++)
-                    betIdArr[j] = betPlaced[i][k];
-                for (int j=0; j < BETAMNT_SIZE; j++, k++)
-                    betAmountArr[j] = betPlaced[i][k];
-
-                betID = UtilityCalc.BytesToInt(betIdArr);
-                betAmount = UtilityCalc.BytesToInt(betAmountArr);
+            if (null != betPlaced[i]) {
+                curBetID = betPlaced[i].getBetID();
+                betAmount = betPlaced[i].getBetAmount();
             }
 
             //Calculate winnings
-            int winnings = betSpots[betID].checkWinnings(resultNum, betAmount);
+            long winnings = betSpots[curBetID].checkWinOnThisSpot(resultNum, betAmount);
 
-            betWinnings[i] = UtilityCalc.CombineBtyeArray(UtilityCalc.IntToByteArr(betID, BETID_SIZE),
-                    UtilityCalc.IntToByteArr(winnings, BETAMNT_SIZE));
+            betWinnings[i] = new BetTracker(curBetID, winnings);
         }
 
         return betWinnings;
     }
 
+
+    public double[] getLosingRates() {
+        double lose_rates[] = new double[TOTAL_BET_SPOTS];
+
+        for (int i=0; i < TOTAL_BET_SPOTS; i++)
+            lose_rates[i] = ((double)(TOTAL_BET_RESULTS - betSpots[i].value.length) / (double)TOTAL_BET_RESULTS);
+
+        return lose_rates;
+    }
+
+
+    public int getWinRate(int betID) {
+        int rate = betSpots[betID].getWinRate();
+
+        return rate;
+    }
 
     /*
         Roulette betting spot will have the following attribute
@@ -242,20 +248,19 @@ public class PlayRoulette extends AbstractPlay {
 
           Each spot will come with its own unique ID reference
      */
-    private class RouletteSpot extends BetSpot {
+    private static class RouletteSpot extends BetSpot {
 
         private int betID;
         private int value[];
         private int winRate;
 
 
-        private RouletteSpot (int betID, int value[], int winRate)
+        private RouletteSpot (int betID, int resultValues[], int winRate)
         {
             this.betID = betID;
-            this.value = value;
+            this.value = resultValues;
             this.winRate = winRate;
         }
-
 
 
         /*
@@ -269,17 +274,21 @@ public class PlayRoulette extends AbstractPlay {
             0 if there is no winning
             win = bet amount * pay rate
          */
-        int checkWinnings(int resultNum, int betAmount) {
+        long checkWinOnThisSpot(int resultNum, long betAmount) {
             int i = 0;
-            int wins = 0;
+            long wins = 0;
 
             while(i < this.value.length && wins <= 0)
             {
                 if (this.value[i++] == resultNum)
-                    wins = betAmount * this.winRate;
+                    wins = betAmount * (this.winRate + 1);
             }
 
             return wins;
+        }
+
+        int getWinRate() {
+            return winRate;
         }
 
     }
